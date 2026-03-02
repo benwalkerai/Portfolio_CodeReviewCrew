@@ -11,7 +11,7 @@ def _require_env(key: str) -> str:
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai") # "openai" or "ollama"
 
-if LLM_PROVIDER = "openai":
+if LLM_PROVIDER == "openai":
     OPENAI_API_KEY = _require_env("OPENAI_API_KEY")
 elif LLM_PROVIDER == "ollama":
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
