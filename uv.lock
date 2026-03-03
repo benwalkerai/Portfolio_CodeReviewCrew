@@ -1969,6 +1969,11 @@ dev = [
     { name = "ruff" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "crewai", specifier = ">=1.9.3" },
@@ -1979,6 +1984,9 @@ requires-dist = [
     { name = "streamlit", specifier = ">=1.54.0" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.0.2" }]
 
 [[package]]
 name = "posthog"

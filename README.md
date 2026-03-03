@@ -1,80 +1,96 @@
-# Portfolio_CodeReviewCrew
-Multi-agent AI code review system built with CrewAI. Four specialised agents (Security Auditor, Code Quality Analyst, Performance Reviewer, Documentation Reviewer) collaboratively analyse codebases and produce consolidated review reports with actionable findings.
+# Portfolio: Code Review Crew
 
-## Architecture Overview
-The app takes a GitHub repo URL (or local path), distributes the code across four specialised  CrewAI agents and produces a consolidated review report.
+Multi-agent AI code review system built with CrewAI. Four specialised agents collaboratively analyse codebases and produce consolidated review reports with actionable findings.
 
-User Input (repo URL/Local Path)
-    --> Code Ingestion (parse files)
-        --> CrewAI Crew (4 agents, sequential + delegation)
-            --> Consolidated Report (Markdown/HTML)
+![Screenshot](docs/screen1.png)
 
-| Agent                  | Role                   | Focus                                                                | Output                                  |
-| ---------------------- | ---------------------- | -------------------------------------------------------------------- | --------------------------------------- |
-| Security Auditor       | Find vulnerabilities   | Hardcoded secrets, SQL injection, dependency risks, input validation | Security findings with severity ratings |
-| Code Quality Analyst   | Assess maintainability | Naming, complexity, DRY violations, type hints, error handling       | Quality score + specific issues         |
-| Performance Reviewer   | Spot inefficiencies    | N+1 patterns, memory leaks, blocking calls, unnecessary loops        | Performance recommendations             |
-| Documentation Reviewer | Evaluate docs          | Missing docstrings, README accuracy, inline comments, API docs       | Documentation coverage report           |
+## Agents
 
+| Agent | Focus |
+|-------|-------|
+| 🛡️ Security Auditor | Hardcoded secrets, injection risks, vulnerable dependencies (via pip-audit + OSV) |
+| 📐 Code Quality Analyst | Complexity metrics (AST analysis), DRY violations, naming, type hints |
+| ⚡ Performance Reviewer | Inefficient algorithms, blocking I/O, memory patterns, N+1 queries |
+| 📝 Documentation Reviewer | Docstring coverage, README accuracy, inline comments, API docs |
 
-### Project Structure
-Portfolio-CodeReviewCrew/
+## Features
+
+- **Multi-agent orchestration** — sequential CrewAI pipeline with shared memory
+- **Structured output** — Pydantic models with severity-rated findings
+- **Dual input** — accepts GitHub URLs (auto-clones) or local file paths
+- **Custom tools** — AST analyser for objective metrics, pip-audit for real CVE data
+- **Dual LLM support** — OpenAI or local Ollama inference
+- **Streamlit UI** — score cards, expandable findings, JSON export
+- **CLI mode** — headless execution with JSON output
+
+## Example Output
+See [examples/sample_review_report.json](examples/sample_review_report.json) for a sample review report.
+
+## Quick Start
+
+```bash
+git clone https://github.com/benwalkerai/Portfolio_CodeReviewCrew.git
+cd Portfolio_CodeReviewCrew
+cp .env.example .env
+# Edit .env with your API key
+uv sync
+```
+
+### Streamlit UI
+
+```bash
+uv run streamlit run src/ui/interface.py
+```
+
+### CLI
+
+```bash
+uv run python main.py /path/to/repo -o report.json
+uv run python main.py https://github.com/user/repo -o report.json
+```
+
+### Docker
+
+```bash
+docker build -t code-review-crew .
+docker run -p 8501:8501 --env-file .env code-review-crew
+```
+
+## Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LLM_PROVIDER` | `openai` | `openai` or `ollama` |
+| `OPENAI_API_KEY` | — | Required if using OpenAI |
+| `MODEL_NAME` | `gpt-4o-mini` | Model to use |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama endpoint |
+| `VERBOSE` | `true` | Agent verbose logging |
+
+## Project Structure
+
+```
+Portfolio_CodeReviewCrew/
 ├── src/
-│   ├── __init__.py
-│   ├── agents/
-│   │   ├── __init__.py
-│   │   ├── security_auditor.py
-│   │   ├── quality_analyst.py
-│   │   ├── performance_reviewer.py
-│   │   └── documentation_reviewer.py
-│   ├── tasks/
-│   │   ├── __init__.py
-│   │   └── review_tasks.py
-│   ├── tools/
-│   │   ├── __init__.py
-│   │   ├── file_reader.py          # Read and parse code files
-│   │   ├── ast_analyzer.py         # Python AST complexity analysis
-│   │   └── dependency_checker.py   # Check for known vuln packages
-│   ├── crew.py                     # Crew assembly and orchestration
-│   ├── config.py                   # Settings, env loading
-│   └── models.py                   # Pydantic output schemas
-├── ui/
-│   ├── __init__.py
-│   └── interface.py                # Streamlit UI
-├── tests/
-│   ├── test_agents.py
-│   └── test_tools.py
-├── .env.example
-├── pyproject.toml
-├── README.md
-└── Dockerfile
+│   ├── agents/           # Agent definitions (4 specialists)
+│   ├── tasks/            # Task definitions per agent
+│   ├── tools/            # Custom CrewAI tools
+│   │   ├── file_reader.py
+│   │   ├── ast_analyser.py
+│   │   ├── dependency_checker.py
+│   │   └── repo_loader.py
+│   ├── ui/               # Streamlit interface
+│   ├── config.py         # LLM provider configuration
+│   ├── models.py         # Pydantic output schemas
+│   └── crew.py           # Crew orchestration
+├── main.py               # CLI entry point
+├── Dockerfile
+└── pyproject.toml
+```
 
-## Build Phases
-Phase 1: Skeleton
-1. Create the repo with pyproject.toml (crewai, streamlit, python-dotenv, pydantic)
-2. Setup config.py with _require_env() pattern
-3. Define Pydantic output models, SecurityFinding, QualityIssue, PerformanceFlag, DocGap and top-levl ReviewReport
-4. Create the four agent definitions in agents/ with role, goal, backstory and allow_delegation=False
+## Tech Stack
 
-Phase 2: Tools & Tasks
-1. Build file_reader.py - takes a repo path, returns a dict of {filepath: content} filtered by extension (.py, .js. ts, etc)
-2. Build ast_analyser.py, uses Python's ast module to calculate cyclomatic complexity, function length, nesting depth
-3. Build dependency_checker.py, reads requriements.txt/pyproject.toml and flags known vulnerable packages
-4. Wire up review_tasks.py, one Task per agent, each receiving the parsed code as context, each outputting the corresponding Pydantic model
+Python, CrewAI, Streamlit, Pydantic, pip-audit, AST module
 
-Phase 3: Crew Orchestration
-1. crew.py assembles the crew with Process.sequential, security -> quality -> performance -> docs
-2. The Security agent's output feeds in Quality (so it can note this insecure patterns is also a quality issue)
-3. A final manager task merges all four outputs into the consolidated ReviewReport
+## License
 
-Phase 4: UI
-1. Streamlit interface: Text input for repo URL/path "Run review" button
-2. Progress display showing which agent is currently active (CrewAI's callback system)
-3. Results rendered as expandable sections per agent, colour coded by severity
-4. Export to Markdown/HTML/PDF button
-
-Phase 5: Polish
-1. ReadMe with architecture diagram, screenshots, usage instructions
-2. Docker + Docker Compose
-3. .env.example with clear placeholders
-4. Testing
+MIT
