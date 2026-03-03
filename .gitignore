@@ -5,7 +5,7 @@ __pycache__/
 uv.lock
 # C extensions
 *.so
-
+.audit_requirements.txt
 # Distribution / packaging
 .Python
 build/

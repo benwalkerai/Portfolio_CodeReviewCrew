@@ -82,6 +82,7 @@ Portfolio_CodeReviewCrew/
 │   ├── config.py         # LLM provider configuration
 │   ├── models.py         # Pydantic output schemas
 │   └── crew.py           # Crew orchestration
+│   ├── tests/            # Unit tests
 ├── main.py               # CLI entry point
 ├── Dockerfile
 └── pyproject.toml
