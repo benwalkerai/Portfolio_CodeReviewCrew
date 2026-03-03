@@ -15,44 +15,50 @@ from src.tasks import (
 )
 from src.tools.file_reader import FileReaderTool
 from src.models import ReviewReport, AgentReport
+from src.tools.repo_loader import RepoLoader
 
 
 logger = logging.getLogger(__name__)
 
 
 def run_review(repo_path: str) -> ReviewReport:
-    reader = FileReaderTool(repo_path=repo_path)
-    files = reader._run()
+    loader = RepoLoader()
+    try:
+        repo_path = loader.load(repo_path)
+        reader = FileReaderTool(repo_path=repo_path)
+        files = reader._run()
+        if not files:
+            raise ValueError(f"No supported code files found in: {repo_path}")
 
-    if not files:
-        raise ValueError(f"No supported code files found in: {repo_path}")
+        logger.info(f"Found {len(files)} files to review")
 
-    logger.info(f"Found {len(files)} files to review")
+        code_context = _build_context(files)
 
-    code_context = _build_context(files)
+        security_agent = create_security_auditor(repo_path)
+        quality_agent = create_quality_analyst(repo_path)
+        performance_agent = create_performance_reviewer(repo_path)
+        docs_agent = create_documentation_reviewer(repo_path)
 
-    security_agent = create_security_auditor(repo_path)
-    quality_agent = create_quality_analyst(repo_path)
-    performance_agent = create_performance_reviewer(repo_path)
-    docs_agent = create_documentation_reviewer(repo_path)
+        security_task = create_security_task(security_agent, code_context)
+        quality_task = create_quality_task(quality_agent, code_context)
+        performance_task = create_performance_task(performance_agent, code_context)
+        docs_task = create_documentation_task(docs_agent, code_context)
 
-    security_task = create_security_task(security_agent, code_context)
-    quality_task = create_quality_task(quality_agent, code_context)
-    performance_task = create_performance_task(performance_agent, code_context)
-    docs_task = create_documentation_task(docs_agent, code_context)
+        crew = Crew(
+            agents=[security_agent, quality_agent, performance_agent, docs_agent],
+            tasks=[security_task, quality_task, performance_task, docs_task],
+            process=Process.sequential,
+            memory=True,
+            verbose=True,
+        )
 
-    crew = Crew(
-        agents=[security_agent, quality_agent, performance_agent, docs_agent],
-        tasks=[security_task, quality_task, performance_task, docs_task],
-        process=Process.sequential,
-        memory=True,
-        verbose=True,
-    )
+        logger.info("Starting code review crew...")
+        result = crew.kickoff()                                    # FIX 1: missing kickoff call
 
-    logger.info("Starting code review crew...")
-    result = crew.kickoff()                                    # FIX 1: missing kickoff call
+        return _parse_results(result, repo_path, len(files))
+    finally:
+        loader.cleanup()
 
-    return _parse_results(result, repo_path, len(files))
 
 
 def _build_context(files: dict[str, str], max_chars: int = 80_000) -> str:
