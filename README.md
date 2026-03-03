@@ -95,3 +95,6 @@ Python, CrewAI, Streamlit, Pydantic, pip-audit, AST module
 ## License
 
 MIT
+
+**Version**: 1.0.0  
+**Author**: [Ben Walker](https://github.com/benwalkerai)
