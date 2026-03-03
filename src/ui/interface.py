@@ -1,6 +1,8 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st
 import logging
-from pathlib import Path
 from src.crew import run_review
 from src.models import ReviewReport, AgentReport, Severity
 
@@ -49,23 +51,26 @@ def main() -> None:
         if not is_url and not Path(repo_input).is_dir():
             st.error(f"Not a valid directory: {repo_input}")
             return
-        
-        with st.status("Running code review...", expanded=True) as status:
-            st.write("Loading repository...")
-            st.write("Security Auditor analysing...")
-            st.write("Code Quality analyst reviewing...")
-            st.write("Performance Reviewer performing...")
-            st.write("Documentation Reviewer reviewing...")
 
-            try:
-                report = run_review(repo_input)
-                status.update(label="Review complete!", state="complete")
-            except Exception as e:
-                status.update(label="Review failed", state="error")
-                st.error(f"Error: {e}")
-                logger.exception("Review failed")
-                return
+        status_container = st.status("Running code review...", expanded=True)
+        log_messages: list[str] = []
+
+        def on_status(msg: str) -> None:
+            log_messages.append(msg)
+            with status_container:
+                st.write(msg)
+
+        try:
+            report = run_review(repo_input, on_status=on_status)
+            status_container.update(label="✅ Review complete!", state="complete", expanded=False)
+        except Exception as e:
+            status_container.update(label="❌ Review failed", state="error")
+            st.error(f"Error: {e}")
+            logger.exception("Review failed")
+            return
+
         _render_report(report)
+
 
 def _render_report(report: ReviewReport) -> None:
     """Render the full review report."""

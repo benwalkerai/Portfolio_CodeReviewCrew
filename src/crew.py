@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Callable
 from crewai import Crew, Process
 from src.agents import (
     create_security_auditor,
@@ -21,9 +22,22 @@ from src.tools.repo_loader import RepoLoader
 logger = logging.getLogger(__name__)
 
 
-def run_review(repo_path: str) -> ReviewReport:
+def run_review(repo_path: str, on_status: Callable[[str], None] | None = None) -> ReviewReport:
     loader = RepoLoader()
     try:
+        def status(msg: str) -> None:
+            logger.info(msg)
+            if on_status:
+                on_status(msg)
+
+        def step_callback(step_output) -> None:
+            agent_name = getattr(step_output, "agent", "Agent")
+            status(f"{agent_name} working...")
+
+        def task_callback(task_output) -> None:
+            agent_name = task_output.agent if task_output.agent else "Agent"
+            status(f"{agent_name} completed")
+        status("Loading repository...")
         repo_path = loader.load(repo_path)
         reader = FileReaderTool(repo_path=repo_path)
         files = reader._run()
@@ -50,6 +64,8 @@ def run_review(repo_path: str) -> ReviewReport:
             process=Process.sequential,
             memory=True,
             verbose=True,
+            step_callback=step_callback,
+            task_callback=task_callback,
         )
 
         logger.info("Starting code review crew...")
