@@ -14,9 +14,11 @@ def create_security_task(agent: Agent, code_context: str) -> Task:
             f"Codebase:\n{code_context}"
         ),
         expected_output=(
-            "A JSON object with: agent_name, summary, score (0-100), "
-            "and a findings array where each finding has: file, line, title, "
-            "description, severity 9critical/high/medium/low/info), and recommendation. "
+            "Return ONLY a valid JSON object with no additional text, markdown, or explanation. "
+            "The JSON must have these exact keys: agent_name (string), summary (string), "
+            "score (integer 0-100), and findings (array of objects with keys: file, line, "
+            "title, description, severity, recommendation). "
+            "severity must be one of: critical, high, medium, low, info."
         ),
         agent=agent,
     )
@@ -24,7 +26,7 @@ def create_security_task(agent: Agent, code_context: str) -> Task:
 def create_quality_task(agent: Agent, code_context: str) -> Task:
     return Task(
         description=(
-            f"Analyse the code quality and maintainability of hte following codebase.\n\n"
+            f"Analyse the code quality and maintainability of the following codebase.\n\n"
             f"Focus areas:\n"
             f"1. DRY violations and code duplication\n"
             f"2. Function/method length and cyclomatic complexity (use ast_analyser tool)\n"
@@ -35,9 +37,11 @@ def create_quality_task(agent: Agent, code_context: str) -> Task:
             f"Codebase:\n{code_context}"
         ),
         expected_output=(
-            "A JSON object with: agent_name, summary, score (0-100), "
-            "and a findings array where each finding has: file, line, title, "
-            "description, severity (critical/high/medium/low/info), and recommendation. "
+            "Return ONLY a valid JSON object with no additional text, markdown, or explanation. "
+            "The JSON must have these exact keys: agent_name (string), summary (string), "
+            "score (integer 0-100), and findings (array of objects with keys: file, line, "
+            "title, description, severity, recommendation). "
+            "severity must be one of: critical, high, medium, low, info."
         ),
         agent=agent,
     )
@@ -47,7 +51,7 @@ def create_performance_task(agent: Agent, code_context: str) -> Task:
         description=(
             f"Review the following codebase for performance issues.\n\n"
             f"Focus areas:\n"
-            f"1. Inefficient algorithms (0(n^2) where 0(n) is possible.\n\n"
+            f"1. Inefficient algorithms (O(n²) where O(n) is possible.\n\n"
             f"2. Unnecessary loops, redundant iterations\n"
             f"3. Blocking I/O in async contexts\n"
             f"4. Memory-intensive patterns (loading full files/datasets into memory)\n"
@@ -56,9 +60,11 @@ def create_performance_task(agent: Agent, code_context: str) -> Task:
             f"Codebase:\n{code_context}"
         ),
         expected_output=(
-            "A JSON object with: agent_name, summary, score (0-100), "
-            "and a findings array where each finding has: file, line, title, "
-            "description, severity (critical/high/medium/low/info), and recommendation."
+            "Return ONLY a valid JSON object with no additional text, markdown, or explanation. "
+            "The JSON must have these exact keys: agent_name (string), summary (string), "
+            "score (integer 0-100), and findings (array of objects with keys: file, line, "
+            "title, description, severity, recommendation). "
+            "severity must be one of: critical, high, medium, low, info."
         ),
         agent=agent,
     )

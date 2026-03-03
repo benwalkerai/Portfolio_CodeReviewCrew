@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 from typing import Callable
@@ -92,28 +93,58 @@ def _build_context(files: dict[str, str], max_chars: int = 80_000) -> str:
         total += len(section)
     return "".join(parts)
 
+def _extract_json(text: str) -> dict | None:
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    match = re.search(r"```(?:json)?\s*(\{.*?})\s*```", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    match = re.search(r"\{.*}", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass
+
+    return None
 
 def _parse_results(
     crew_result, repo_name: str, files_reviewed: int
 ) -> ReviewReport:
-    task_outputs = crew_result.tasks_output                    # FIX 2: tasks_outputs → task_outputs (match usage below)
+    task_outputs = crew_result.tasks_output
 
     agent_reports: list[AgentReport] = []
-    for output in task_outputs:                                # FIX 3: was using undefined task_outputs
-        try:
-            data = json.loads(output.raw)
-            agent_reports.append(AgentReport(**data))
-        except (json.JSONDecodeError, TypeError):
-            agent_reports.append(                              # FIX 4: agents_reports → agent_reports
+    for output in task_outputs:
+        data = _extract_json(output.raw) if output.raw else None
+        if data:
+            try:
+                agent_reports.append(AgentReport(**data))
+            except Exception:
+                agent_reports.append(
+                    AgentReport(
+                        agent_name=data.get("agent_name", output.agent or "Unknown"),
+                        summary=data.get("summary", output.raw[:500]),
+                        findings=[],
+                        score=data.get("score", 0),
+                    )
+                )
+        else:
+            agent_reports.append(
                 AgentReport(
                     agent_name=output.agent or "Unknown",
-                    summary=output.raw[:500] if output.raw else "No output",  # FIX 5: outout → output
-                    findings=[],                               # FIX 6: missing comma after []
+                    summary=output.raw[:500] if output.raw else "No output",
+                    findings=[],
                     score=0,
                 )
             )
 
-    # FIX 7: while/overall/return were INSIDE the for loop — dedented
     while len(agent_reports) < 4:
         agent_reports.append(
             AgentReport(agent_name="Unknown", summary="No output", findings=[], score=0)
