@@ -2,10 +2,11 @@
 
 Multi-agent AI code review system built with CrewAI. Four specialised agents collaboratively analyse codebases and produce consolidated review reports with actionable findings.
 
-![Python Version](https://img.shields.io/badge/python-3.12B-blue)
+![Python Version](https://img.shields.io/badge/python-3.12-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Streamlit](https://img.shields.io/badge/UI-Streamlit-orange)
+![Stack](https://img.shields.io/badge/Stack-CrewAI%20%7C%20Streamlit%20%7C%20Pydantic-yellow)
 
+UI:
 ![Screenshot](docs/screen1.png)
 
 ## Agents
